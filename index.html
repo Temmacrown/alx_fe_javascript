@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Quote Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .quote-box {
+            background: white;
+            padding: 20px;
+            margin: 20px auto;
+            width: 60%;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        #quote-text {
+            font-size: 1.5rem;
+            font-style: italic;
+        }
+
+        #quote-author {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        select, input, button {
+            padding: 10px;
+            margin: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        form {
+            margin-top: 30px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            width: 60%;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        input {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Dynamic Quote Generator</h1>
+
+    <!-- Quote Display -->
+    <div>
+        <label for="category-select">Select Category:</label>
+        <select id="category-select"></select>
+        <button id="show-quote-btn">Show Random Quote</button>
+    </div>
+
+    <div class="quote-box">
+        <p id="quote-text">Select a category to see a quote</p>
+        <p id="quote-author"></p>
+    </div>
+
+    <!-- Add Quote Form -->
+    <form id="add-quote-form">
+        <h2>Add a New Quote</h2>
+        <label for="new-quote">Quote Text:</label>
+        <input type="text" id="new-quote" required>
+
+        <label for="quote-author-input">Author:</label>
+        <input type="text" id="quote-author-input" required>
+
+        <label for="quote-category">Category:</label>
+        <input type="text" id="quote-category" required>
+
+        <button type="submit">Add Quote</button>
+    </form>
+
+    <script>
+        // Initial quotes array
+        let quotes = [
+            { text: "The best way to predict the future is to create it.", author: "Peter Drucker", category: "Inspiration" },
+            { text: "Do not wait to strike till the iron is hot, but make it hot by striking.", author: "William Butler Yeats", category: "Motivation" },
+            { text: "Life is what happens when you're busy making other plans.", author: "John Lennon", category: "Life" }
+        ];
+
+        // DOM Elements
+        const categorySelect = document.getElementById("category-select");
+        const quoteText = document.getElementById("quote-text");
+        const quoteAuthor = document.getElementById("quote-author");
+        const showQuoteBtn = document.getElementById("show-quote-btn");
+
+        const addQuoteForm = document.getElementById("add-quote-form");
+        const newQuoteInput = document.getElementById("new-quote");
+        const newAuthorInput = document.getElementById("quote-author-input");
+        const newCategoryInput = document.getElementById("quote-category");
+
+        // Populate category dropdown
+        function populateCategories() {
+            categorySelect.innerHTML = "";
+            const uniqueCategories = [...new Set(quotes.map(q => q.category))];
+            uniqueCategories.forEach(category => {
+                const option = document.createElement("option");
+                option.value = category;
+                option.textContent = category;
+                categorySelect.appendChild(option);
+            });
+        }
+
+        // Show a random quote
+        function showRandomQuote() {
+            const selectedCategory = categorySelect.value;
+            const filteredQuotes = quotes.filter(q => q.category === selectedCategory);
+
+            if (filteredQuotes.length === 0) {
+                quoteText.textContent = "No quotes available for this category.";
+                quoteAuthor.textContent = "";
+                return;
+            }
+
+            const randomQuote = filteredQuotes[Math.floor(Math.random() * filteredQuotes.length)];
+            quoteText.textContent = `"${randomQuote.text}"`;
+            quoteAuthor.textContent = `— ${randomQuote.author}`;
+        }
+
+        // Add new quote dynamically
+        function handleAddQuote() {
+            addQuoteForm.addEventListener("submit", function (event) {
+                event.preventDefault();
+
+                const newQuoteText = newQuoteInput.value.trim();
+                const newQuoteAuthor = newAuthorInput.value.trim();
+                const newQuoteCategory = newCategoryInput.value.trim();
+
+                if (newQuoteText && newQuoteAuthor && newQuoteCategory) {
+                    quotes.push({
+                        text: newQuoteText,
+                        author: newQuoteAuthor,
+                        category: newQuoteCategory
+                    });
+
+                    populateCategories();
+                    addQuoteForm.reset();
+                    alert("Quote added successfully!");
+                } else {
+                    alert("Please fill in all fields.");
+                }
+            });
+        }
+
+        // Initialize
+        populateCategories();
+        showQuoteBtn.addEventListener("click", showRandomQuote);
+        handleAddQuote();
+    </script>
+
+</body>
+</html>
