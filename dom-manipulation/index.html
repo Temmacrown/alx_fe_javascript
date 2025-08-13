@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Quote Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+    }
+    #quoteDisplay {
+      background: white;
+      padding: 20px;
+      margin: 20px auto;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 500px;
+      font-size: 1.2rem;
+    }
+    select, input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    button {
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dynamic Quote Generator</h1>
+
+  <div>
+    <label for="categorySelect">Select Category:</label>
+    <select id="categorySelect"></select>
+    <button id="newQuote">Show New Quote</button>
+  </div>
+
+  <div id="quoteDisplay">Your quote will appear here.</div>
+
+  <h2>Add a New Quote</h2>
+  <div>
+    <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
+    <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
+    <button id="addQuoteBtn">Add Quote</button>
+  </div>
+
+  <script>
+    // Initial Quotes Array
+    let quotes = [
+      { text: "The best way to get started is to quit talking and begin doing.", category: "Motivation" },
+      { text: "Don't let yesterday take up too much of today.", category: "Inspiration" },
+      { text: "It's not whether you get knocked down, it's whether you get up.", category: "Motivation" },
+      { text: "Your time is limited, so don’t waste it living someone else’s life.", category: "Life" }
+    ];
+
+    // DOM Elements
+    const quoteDisplay = document.getElementById('quoteDisplay');
+    const categorySelect = document.getElementById('categorySelect');
+    const newQuoteBtn = document.getElementById('newQuote');
+    const addQuoteBtn = document.getElementById('addQuoteBtn');
+
+    // Populate category dropdown
+    function populateCategories() {
+      const categories = [...new Set(quotes.map(q => q.category))];
+      categorySelect.innerHTML = "";
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        categorySelect.appendChild(option);
+      });
+    }
+
+    // Show random quote from selected category
+    function showRandomQuote() {
+      const selectedCategory = categorySelect.value;
+      const filteredQuotes = quotes.filter(q => q.category === selectedCategory);
+      if (filteredQuotes.length > 0) {
+        const randomQuote = filteredQuotes[Math.floor(Math.random() * filteredQuotes.length)];
+        quoteDisplay.textContent = randomQuote.text;
+      } else {
+        quoteDisplay.textContent = "No quotes available for this category.";
+      }
+    }
+
+    // Add new quote
+    function addQuote() {
+      const textInput = document.getElementById('newQuoteText');
+      const categoryInput = document.getElementById('newQuoteCategory');
+      const newText = textInput.value.trim();
+      const newCategory = categoryInput.value.trim();
+
+      if (newText && newCategory) {
+        quotes.push({ text: newText, category: newCategory });
+        populateCategories();
+        textInput.value = "";
+        categoryInput.value = "";
+        alert("Quote added successfully!");
+      } else {
+        alert("Please fill in both fields.");
+      }
+    }
+
+    // Event Listeners
+    newQuoteBtn.addEventListener('click', showRandomQuote);
+    addQuoteBtn.addEventListener('click', addQuote);
+
+    // Initialize
+    populateCategories();
+    showRandomQuote();
+  </script>
+</body>
+</html>
