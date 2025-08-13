@@ -24,8 +24,8 @@ function populateCategories() {
   });
 }
 
-// Show random quote from selected category
-function displayRandomQuote() {
+// Function name must be showRandomQuote for test
+function showRandomQuote() {
   const selectedCategory = categorySelect.value;
   const filteredQuotes = quotes.filter(q => q.category === selectedCategory);
   if (filteredQuotes.length > 0) {
@@ -55,9 +55,9 @@ function addQuote() {
 }
 
 // Event Listeners
-newQuoteBtn.addEventListener('click', displayRandomQuote);
+newQuoteBtn.addEventListener('click', showRandomQuote);
 addQuoteBtn.addEventListener('click', addQuote);
 
 // Initialize
 populateCategories();
-displayRandomQuote();
+showRandomQuote();
