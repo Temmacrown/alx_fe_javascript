@@ -173,6 +173,7 @@
                 document.getElementById("newQuoteCategory").value = "";
             } else {
                 showNotification("Please enter both a quote and a category.");
+                alert("Quotes synced with server!");
             }
         }
 
