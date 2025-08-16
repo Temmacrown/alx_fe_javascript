@@ -3,312 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dynamic Quote Generator — Storage + JSON Import/Export</title>
+  <title>Quote Generator with Server Sync</title>
   <style>
-    :root { --maxw: 720px; }
     body {
       font-family: Arial, sans-serif;
-      background: #f7f8fa;
-      margin: 0;
-      padding: 24px;
-      color: #222;
+      margin: 20px;
+      background-color: #f4f4f4;
     }
-    h1 { text-align: center; margin: 0 0 16px; }
-    .card {
-      background: #fff;
-      border: 1px solid #e7e7e7;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,.06);
-      padding: 18px;
-      margin: 12px auto;
-      max-width: var(--maxw);
+    h1 {
+      text-align: center;
     }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; }
-    .row > * { flex: 1 1 180px; }
-    label { font-size: .9rem; color: #555; display: block; margin-bottom: 6px; }
-    select, input[type="text"], input[type="file"] {
-      width: 100%; padding: 10px 12px; border-radius: 8px;
-      border: 1px solid #cfcfcf; font-size: 1rem;
-      background: #fff;
+    #notificationArea {
+      display: none;
+      background-color: #fffae6;
+      border: 1px solid #ffd42a;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      text-align: center;
     }
-    button {
-      padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer;
-      background: #2b7cff; color: #fff; font-weight: 600;
+    select, button, input {
+      padding: 8px;
+      margin: 5px;
     }
-    button:hover { opacity: .9; }
-    #quoteDisplay {
-      font-size: 1.25rem; line-height: 1.5; text-align: center;
-      padding: 16px; border-radius: 8px; background: #f3f7ff; border: 1px dashed #c8dcff;
+    #quoteDisplay p {
+      background: white;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 5px;
     }
-    .muted { color:#666; font-size: .95rem; }
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-    .btn-secondary { background: #00a66a; }
-    .btn-ghost { background: #eef0f3; color:#222; border: 1px solid #d4d7dd; }
-    .note { font-size: .85rem; color:#777; margin-top: 4px; }
+    .controls {
+      margin: 15px 0;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <h1>Dynamic Quote Generator</h1>
+  <h1>Quote Generator with Server Sync</h1>
+  <div id="notificationArea"></div>
 
-  <!-- Picker & Display -->
-  <section class="card">
-    <div class="row">
-      <div>
-        <label for="categorySelect">Select Category</label>
-        <select id="categorySelect"></select>
-      </div>
-      <div style="align-self:end">
-        <button id="newQuote">Show New Quote</button>
-      </div>
-    </div>
-    <div id="quoteDisplay" style="margin-top:14px;">Your quote will appear here.</div>
-    <p class="note">Tip: The last viewed quote is remembered for this tab via Session Storage.</p>
-  </section>
+  <div class="controls">
+    <label for="categoryFilter">Filter by category:</label>
+    <select id="categoryFilter"></select>
+  </div>
 
-  <!-- Add Quote -->
-  <section class="card">
-    <h2 style="margin-top:0">Add a New Quote</h2>
-    <div class="row">
-      <div>
-        <label for="newQuoteText">Quote Text</label>
-        <input id="newQuoteText" type="text" placeholder="e.g. The only limit to our realization of tomorrow is our doubts of today." />
-      </div>
-      <div>
-        <label for="newQuoteCategory">Category</label>
-        <input id="newQuoteCategory" type="text" placeholder="e.g. Inspiration" />
-      </div>
-    </div>
-    <div class="actions" style="margin-top:10px">
-      <button id="addQuoteBtn" class="btn-secondary">Add Quote</button>
-    </div>
-  </section>
+  <div class="controls">
+    <button id="showNewQuoteBtn">Show New Quote</button>
+    <button onclick="exportToJsonFile()">Export Quotes</button>
+    <input type="file" id="importFile" accept=".json" />
+  </div>
 
-  <!-- Import / Export / Storage Controls -->
-  <section class="card">
-    <h2 style="margin-top:0">Import / Export Quotes</h2>
-    <div class="row">
-      <div>
-        <label for="importFile">Import from JSON</label>
-        <input type="file" id="importFile" accept=".json" />
-        <p class="note">Expected format: array of objects with <code>text</code> and <code>category</code> keys.</p>
-      </div>
-      <div style="align-self:end">
-        <button id="exportBtn">Export Quotes as JSON</button>
-      </div>
-    </div>
-    <div class="actions" style="margin-top:10px">
-      <button id="resetDefaults" class="btn-ghost">Reset to Default Quotes</button>
-      <button id="clearSession" class="btn-ghost">Clear Session (Last Viewed)</button>
-    </div>
-  </section>
+  <!-- Add Quote form will be created dynamically by script.js -->
 
-  <script>
-    // -----------------------------
-    // Defaults & Storage Utilities
-    // -----------------------------
-    const DEFAULT_QUOTES = [
-      { text: "The best way to get started is to quit talking and begin doing.", category: "Motivation" },
-      { text: "Don't let yesterday take up too much of today.", category: "Inspiration" },
-      { text: "It's not whether you get knocked down, it's whether you get up.", category: "Motivation" },
-      { text: "Your time is limited, so don’t waste it living someone else’s life.", category: "Life" }
-    ];
+  <div id="quoteDisplay"></div>
 
-    let quotes = []; // active in-memory list
-
-    const LS_KEY = "quotes";
-    const SS_LAST = "lastViewedQuote";
-
-    function loadQuotes() {
-      try {
-        const saved = localStorage.getItem(LS_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            quotes = parsed;
-          }
-        }
-      } catch (_) {}
-      // If none found or invalid, seed with defaults
-      if (!Array.isArray(quotes) || quotes.length === 0) {
-        quotes = [...DEFAULT_QUOTES];
-        saveQuotes();
-      }
-    }
-
-    function saveQuotes() {
-      localStorage.setItem(LS_KEY, JSON.stringify(quotes));
-    }
-
-    function resetToDefaults() {
-      quotes = [...DEFAULT_QUOTES];
-      saveQuotes();
-      populateCategories();
-      // Select first category and show quote
-      if (categorySelect.options.length) categorySelect.selectedIndex = 0;
-      showRandomQuote();
-    }
-
-    // -----------------------------
-    // DOM Elements
-    // -----------------------------
-    const quoteDisplay    = document.getElementById('quoteDisplay');
-    const categorySelect  = document.getElementById('categorySelect');
-    const newQuoteBtn     = document.getElementById('newQuote');
-    const addQuoteBtn     = document.getElementById('addQuoteBtn');
-    const importFileInput = document.getElementById('importFile');
-    const exportBtn       = document.getElementById('exportBtn');
-    const resetDefaultsBtn= document.getElementById('resetDefaults');
-    const clearSessionBtn = document.getElementById('clearSession');
-
-    // -----------------------------
-    // UI Helpers
-    // -----------------------------
-    function populateCategories() {
-      const categories = [...new Set(quotes.map(q => q.category))].sort((a,b)=>a.localeCompare(b));
-      categorySelect.innerHTML = "";
-      categories.forEach(cat => {
-        const opt = document.createElement('option');
-        opt.value = cat;
-        opt.textContent = cat;
-        categorySelect.appendChild(opt);
-      });
-    }
-
-    function showRandomQuote() {
-      const selectedCategory = categorySelect.value;
-      const list = quotes.filter(q => q.category === selectedCategory);
-      if (list.length === 0) {
-        quoteDisplay.textContent = "No quotes available for this category.";
-        return;
-      }
-      const q = list[Math.floor(Math.random() * list.length)];
-      quoteDisplay.textContent = q.text;
-
-      // Save last viewed quote in Session Storage (optional demo)
-      sessionStorage.setItem(SS_LAST, JSON.stringify(q));
-    }
-
-    function addQuote() {
-      const textEl = document.getElementById('newQuoteText');
-      const catEl  = document.getElementById('newQuoteCategory');
-      const text = textEl.value.trim();
-      const category = catEl.value.trim();
-
-      if (!text || !category) {
-        alert("Please provide both quote text and category.");
-        return;
-      }
-
-      quotes.push({ text, category });
-      saveQuotes();                 // persist to Local Storage
-      populateCategories();         // update categories (new category might be added)
-      categorySelect.value = category;
-      showRandomQuote();            // reflect the new quote immediately
-      textEl.value = "";
-      catEl.value = "";
-      alert("Quote added successfully!");
-    }
-
-    // -----------------------------
-    // JSON Export / Import
-    // -----------------------------
-    function exportToJsonFile() {
-      const data = JSON.stringify(quotes, null, 2);
-      const blob = new Blob([data], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = "quotes.json";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    // Required name per instructions
-    function importFromJsonFile(event) {
-      const file = event.target.files && event.target.files[0];
-      if (!file) return;
-
-      const fileReader = new FileReader();
-      fileReader.onload = function(e) {
-        try {
-          const imported = JSON.parse(e.target.result);
-          if (!Array.isArray(imported)) throw new Error("Invalid structure");
-
-          // Keep only valid entries: { text: string, category: string }
-          const valid = imported.filter(
-            q => q && typeof q.text === "string" && q.text.trim() &&
-                 typeof q.category === "string" && q.category.trim()
-          );
-
-          if (valid.length === 0) {
-            alert("No valid quotes found in the file.");
-            return;
-          }
-
-          quotes.push(...valid);
-          saveQuotes();
-          populateCategories();
-          // Set dropdown to first imported category to show something fresh
-          categorySelect.value = valid[0].category;
-          showRandomQuote();
-          alert("Quotes imported successfully!");
-          importFileInput.value = ""; // reset input
-        } catch (err) {
-          alert("Invalid JSON file.");
-        }
-      };
-      fileReader.readAsText(file);
-    }
-
-    // -----------------------------
-    // Event Listeners & Init
-    // -----------------------------
-    document.getElementById('newQuote').addEventListener('click', showRandomQuote);
-    addQuoteBtn.addEventListener('click', addQuote);
-    importFileInput.addEventListener('change', importFromJsonFile);
-    exportBtn.addEventListener('click', exportToJsonFile);
-    resetDefaultsBtn.addEventListener('click', resetToDefaults);
-    clearSessionBtn.addEventListener('click', () => {
-      sessionStorage.removeItem(SS_LAST);
-      alert("Cleared last viewed quote for this tab.");
-    });
-
-    // Initialize: load from Local Storage, set categories, restore last session quote if available
-    loadQuotes();
-    populateCategories();
-
-    // If a last viewed quote exists in Session Storage, show it and select its category
-    (function restoreLastViewed() {
-      try {
-        const last = sessionStorage.getItem(SS_LAST);
-        if (last) {
-          const q = JSON.parse(last);
-          if (q && q.text && q.category) {
-            // Ensure category exists in dropdown
-            if (!quotes.some(x => x.text === q.text && x.category === q.category)) {
-              // If missing (e.g., after storage clear), add it back
-              quotes.push({ text: q.text, category: q.category });
-              saveQuotes();
-              populateCategories();
-            }
-            if ([...categorySelect.options].some(o => o.value === q.category)) {
-              categorySelect.value = q.category;
-            }
-            quoteDisplay.textContent = q.text;
-            return; // done restoring
-          }
-        }
-      } catch (_) {}
-      // Fallback: show any random quote
-      if (categorySelect.options.length) {
-        categorySelect.selectedIndex = 0;
-        showRandomQuote();
-      } else {
-        quoteDisplay.textContent = "No quotes available.";
-      }
-    })();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
